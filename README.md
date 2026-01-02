@@ -1,6 +1,6 @@
 # LocalPulse
 
-[![[cloudflarebutton]]](https://deploy.workers.cloudflare.com/?url=${repositoryUrl})
+[![[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/mikeschlottig/localpulse-gmb-dashboard)]](https://deploy.workers.cloudflare.com/?url=${repositoryUrl})
 
 A full-stack chat application built with Cloudflare Workers, Durable Objects, React, and Tailwind CSS. This demo showcases a production-ready architecture for managing users, chat boards, and messages with persistent storage, indexing, and a modern UI.
 
@@ -88,7 +88,7 @@ Use `src/lib/api-client.ts` for frontend calls.
    - Edit `wrangler.jsonc` for custom bindings/migrations.
    - Set up custom domain via Cloudflare dashboard.
 
-[![[cloudflarebutton]]](https://deploy.workers.cloudflare.com/?url=${repositoryUrl})
+[![[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/mikeschlottig/localpulse-gmb-dashboard)]](https://deploy.workers.cloudflare.com/?url=${repositoryUrl})
 
 **One-click deploy** with the button above – includes Workers, Pages, and DO storage.
 
