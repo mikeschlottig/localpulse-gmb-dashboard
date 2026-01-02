@@ -1,138 +1,186 @@
-// Home page of the app.
-// Currently a demo placeholder "please wait" screen.
-// Replace this file with your actual app UI. Do not delete it to use some other file as homepage. Simply replace the entire contents of this file.
-
-import { useEffect, useMemo, useState } from 'react'
-import { Sparkles } from 'lucide-react'
-
-import { ThemeToggle } from '@/components/ThemeToggle'
-import { HAS_TEMPLATE_DEMO, TemplateDemo } from '@/components/TemplateDemo'
-import { Button } from '@/components/ui/button'
-import { Toaster, toast } from '@/components/ui/sonner'
-
-function formatDuration(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000))
-  const m = Math.floor(total / 60)
-  const s = total % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
-
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { 
+  LayoutDashboard, 
+  TrendingUp, 
+  Users, 
+  Star, 
+  AlertCircle,
+  ArrowUpRight,
+  ArrowDownRight
+} from 'lucide-react';
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer 
+} from 'recharts';
+import { api } from '@/lib/api-client';
+import type { Business, BusinessStats } from '@shared/types';
+import { AppLayout } from '@/components/layout/AppLayout';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 export function HomePage() {
-  const [coins, setCoins] = useState(0)
-  const [isRunning, setIsRunning] = useState(false)
-  const [startedAt, setStartedAt] = useState<number | null>(null)
-  const [elapsedMs, setElapsedMs] = useState(0)
-
-  useEffect(() => {
-    if (!isRunning || startedAt === null) return
-
-    const t = setInterval(() => {
-      setElapsedMs(Date.now() - startedAt)
-    }, 250)
-
-    return () => clearInterval(t)
-  }, [isRunning, startedAt])
-
-  const formatted = useMemo(() => formatDuration(elapsedMs), [elapsedMs])
-
-  const onPleaseWait = () => {
-    setCoins((c) => c + 1)
-
-    if (!isRunning) {
-      // Resume from the current elapsed time
-      setStartedAt(Date.now() - elapsedMs)
-      setIsRunning(true)
-      toast.success('Building your app…', {
-        description: "Hang tight — we're setting everything up.",
-      })
-      return
-    }
-
-    setIsRunning(false)
-    toast.info('Still working…', {
-      description: 'You can come back in a moment.',
-    })
-  }
-
-  const onReset = () => {
-    setCoins(0)
-    setIsRunning(false)
-    setStartedAt(null)
-    setElapsedMs(0)
-    toast('Reset complete')
-  }
-
-  const onAddCoin = () => {
-    setCoins((c) => c + 1)
-    toast('Coin added')
-  }
-
+  const { data: stats, isLoading: statsLoading } = useQuery<BusinessStats>({
+    queryKey: ['dashboard-stats'],
+    queryFn: () => api<BusinessStats>('/api/dashboard/stats'),
+  });
+  const { data: businesses, isLoading: bizLoading } = useQuery<{ items: Business[] }>({
+    queryKey: ['businesses'],
+    queryFn: () => api<{ items: Business[] }>('/api/businesses'),
+  });
+  const chartData = [
+    { name: 'Mon', views: 2400 },
+    { name: 'Tue', views: 3200 },
+    { name: 'Wed', views: 2800 },
+    { name: 'Thu', views: 4500 },
+    { name: 'Fri', views: 3900 },
+    { name: 'Sat', views: 5200 },
+    { name: 'Sun', views: 4800 },
+  ];
+  const needsAttention = businesses?.items
+    ?.filter(b => b.rating < 4.0)
+    ?.sort((a, b) => a.rating - b.rating)
+    ?.slice(0, 3) || [];
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4 overflow-hidden relative">
-      <ThemeToggle />
-      <div className="absolute inset-0 bg-gradient-rainbow opacity-10 dark:opacity-20 pointer-events-none" />
-
-      <div className="text-center space-y-8 relative z-10 animate-fade-in w-full">
-        <div className="flex justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-primary floating">
-            <Sparkles className="w-8 h-8 text-white rotating" />
-          </div>
+    <AppLayout container>
+      <div className="space-y-8">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-bold tracking-tight">Performance Overview</h1>
+          <p className="text-muted-foreground">Welcome back. Here is how your business locations are performing this week.</p>
         </div>
-
-        <div className="space-y-3">
-          <h1 className="text-5xl md:text-7xl font-display font-bold text-balance leading-tight">
-            Creating your <span className="text-gradient">app</span>
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto text-pretty">
-            Your application would be ready soon.
-          </p>
+        {/* Aggregate Stats Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard 
+            title="Total Locations" 
+            value={stats?.totalLocations} 
+            icon={<LayoutDashboard className="h-4 w-4" />} 
+            loading={statsLoading}
+          />
+          <StatCard 
+            title="Avg Rating" 
+            value={stats?.averageRating.toFixed(1)} 
+            icon={<Star className="h-4 w-4" />} 
+            loading={statsLoading}
+            trend="+0.2 this month"
+          />
+          <StatCard 
+            title="Total Reviews" 
+            value={stats?.totalReviews.toLocaleString()} 
+            icon={<Users className="h-4 w-4" />} 
+            loading={statsLoading}
+          />
+          <StatCard 
+            title="Profile Views" 
+            value={stats?.totalViews.toLocaleString()} 
+            icon={<TrendingUp className="h-4 w-4" />} 
+            loading={statsLoading}
+            trend="+12% vs last week"
+            isPositive
+          />
         </div>
-
-        {HAS_TEMPLATE_DEMO ? (
-          <div className="max-w-5xl mx-auto text-left">
-            <TemplateDemo />
-          </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          {/* Main Chart */}
+          <Card className="lg:col-span-4">
+            <CardHeader>
+              <CardTitle>Discovery Insights</CardTitle>
+              <CardDescription>Views across all tracked Google Business Profiles</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="views" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorViews)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+          {/* Critical Items */}
+          <Card className="lg:col-span-3">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-destructive" />
+                <CardTitle>Needs Attention</CardTitle>
+              </div>
+              <CardDescription>Locations with ratings below 4.0 or flagged status</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {bizLoading ? (
+                  Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)
+                ) : needsAttention.length > 0 ? (
+                  needsAttention.map((biz) => (
+                    <div key={biz.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium leading-none">{biz.name}</p>
+                        <p className="text-xs text-muted-foreground">{biz.category}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                        <span className="text-sm font-bold">{biz.rating}</span>
+                        <Badge variant={biz.status === 'Flagged' ? 'destructive' : 'outline'} className="text-[10px] h-5">
+                          {biz.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-10 text-muted-foreground">
+                    All locations are performing well!
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </AppLayout>
+  );
+}
+function StatCard({ title, value, icon, loading, trend, isPositive }: { 
+  title: string; 
+  value: any; 
+  icon: React.ReactNode; 
+  loading: boolean;
+  trend?: string;
+  isPositive?: boolean;
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <div className="text-muted-foreground">{icon}</div>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <Skeleton className="h-8 w-20" />
         ) : (
           <>
-            <div className="flex justify-center gap-4">
-              <Button
-                size="lg"
-                onClick={onPleaseWait}
-                className="btn-gradient px-8 py-4 text-lg font-semibold hover:-translate-y-0.5 transition-all duration-200"
-                aria-live="polite"
-              >
-                Please Wait
-              </Button>
-            </div>
-
-            <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-              <div>
-                Time elapsed:{' '}
-                <span className="font-medium tabular-nums text-foreground">{formatted}</span>
+            <div className="text-2xl font-bold">{value ?? '0'}</div>
+            {trend && (
+              <div className="flex items-center mt-1">
+                {isPositive ? <ArrowUpRight className="h-3 w-3 text-emerald-500 mr-1" /> : <ArrowDownRight className="h-3 w-3 text-rose-500 mr-1" />}
+                <p className={cn("text-xs", isPositive ? "text-emerald-500" : "text-rose-500")}>
+                  {trend}
+                </p>
               </div>
-              <div>
-                Coins:{' '}
-                <span className="font-medium tabular-nums text-foreground">{coins}</span>
-              </div>
-            </div>
-
-            <div className="flex justify-center gap-2">
-              <Button variant="outline" size="sm" onClick={onReset}>
-                Reset
-              </Button>
-              <Button variant="outline" size="sm" onClick={onAddCoin}>
-                Add Coin
-              </Button>
-            </div>
+            )}
           </>
         )}
-      </div>
-
-      <footer className="absolute bottom-8 text-center text-muted-foreground/80">
-        <p>Powered by Cloudflare</p>
-      </footer>
-
-      <Toaster richColors closeButton />
-    </div>
-  )
+      </CardContent>
+    </Card>
+  );
 }
