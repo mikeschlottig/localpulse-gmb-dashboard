@@ -1,4 +1,4 @@
-import type { Business, User, Chat, ChatMessage } from './types';
+import type { Business, User, Review, LocationInsights, ProfileHealth } from './types';
 export const MOCK_BUSINESSES: Business[] = [
   {
     id: 'b1',
@@ -61,8 +61,29 @@ export const MOCK_BUSINESSES: Business[] = [
     lastUpdated: new Date().toISOString(),
   },
 ];
-export const MOCK_USERS: User[] = [
-  { id: 'u1', name: 'Admin User' }
-];
-export const MOCK_CHATS: Chat[] = [];
-export const MOCK_CHAT_MESSAGES: ChatMessage[] = [];
+export const MOCK_REVIEWS: Record<string, Review[]> = {
+  'b1': [
+    { id: 'r1', businessId: 'b1', author: 'Alex Johnson', rating: 5, comment: 'The best espresso in the city! Fast wifi too.', date: '2024-05-10', avatarUrl: 'https://i.pravatar.cc/150?u=r1' },
+    { id: 'r2', businessId: 'b1', author: 'Sarah Smith', rating: 4, comment: 'Great atmosphere, but can get very crowded on weekends.', date: '2024-05-08', response: 'Thanks Sarah! We are expanding our seating area soon.' },
+  ],
+  'b5': [
+    { id: 'r3', businessId: 'b5', author: 'John Doe', rating: 1, comment: 'Terrible experience. The wait time was over 2 hours.', date: '2024-05-01' },
+    { id: 'r4', businessId: 'b5', author: 'Mike Ross', rating: 2, comment: 'Front desk was rude. Dental work was okay.', date: '2024-04-28' },
+  ]
+};
+export const MOCK_INSIGHTS: Record<string, LocationInsights> = {
+  'b1': {
+    searchTerms: [
+      { term: 'coffee near me', growth: 12 },
+      { term: 'best espresso metro city', growth: 25 },
+      { term: 'cafe with wifi', growth: 8 },
+      { term: 'downtown breakfast', growth: -2 },
+    ],
+    actions: { calls: 450, directions: 1200, website: 800 }
+  }
+};
+export const MOCK_HEALTH: Record<string, ProfileHealth> = {
+  'b1': { phoneVerified: true, websiteLinked: true, hoursSet: true, photosCount: 45, descriptionSet: true },
+  'b3': { phoneVerified: false, websiteLinked: true, hoursSet: false, photosCount: 2, descriptionSet: false },
+};
+export const MOCK_USERS: User[] = [{ id: 'u1', name: 'Admin User' }];

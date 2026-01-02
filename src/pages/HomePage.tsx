@@ -1,24 +1,26 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { 
-  LayoutDashboard, 
-  TrendingUp, 
-  Users, 
-  Star, 
+import { Link } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  TrendingUp,
+  Users,
+  Star,
   AlertCircle,
   ArrowUpRight,
   ArrowDownRight
 } from 'lucide-react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer 
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
 } from 'recharts';
 import { api } from '@/lib/api-client';
+import { cn } from '@/lib/utils';
 import type { Business, BusinessStats } from '@shared/types';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -43,7 +45,7 @@ export function HomePage() {
     { name: 'Sun', views: 4800 },
   ];
   const needsAttention = businesses?.items
-    ?.filter(b => b.rating < 4.0)
+    ?.filter(b => b.rating < 4.0 || b.status === 'Flagged')
     ?.sort((a, b) => a.rating - b.rating)
     ?.slice(0, 3) || [];
   return (
@@ -53,39 +55,38 @@ export function HomePage() {
           <h1 className="text-3xl font-bold tracking-tight">Performance Overview</h1>
           <p className="text-muted-foreground">Welcome back. Here is how your business locations are performing this week.</p>
         </div>
-        {/* Aggregate Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard 
-            title="Total Locations" 
-            value={stats?.totalLocations} 
-            icon={<LayoutDashboard className="h-4 w-4" />} 
+          <StatCard
+            title="Total Locations"
+            value={stats?.totalLocations}
+            icon={<LayoutDashboard className="h-4 w-4" />}
             loading={statsLoading}
           />
-          <StatCard 
-            title="Avg Rating" 
-            value={stats?.averageRating.toFixed(1)} 
-            icon={<Star className="h-4 w-4" />} 
+          <StatCard
+            title="Avg Rating"
+            value={stats?.averageRating.toFixed(1)}
+            icon={<Star className="h-4 w-4" />}
             loading={statsLoading}
             trend="+0.2 this month"
+            isPositive
           />
-          <StatCard 
-            title="Total Reviews" 
-            value={stats?.totalReviews.toLocaleString()} 
-            icon={<Users className="h-4 w-4" />} 
+          <StatCard
+            title="Total Reviews"
+            value={stats?.totalReviews.toLocaleString()}
+            icon={<Users className="h-4 w-4" />}
             loading={statsLoading}
           />
-          <StatCard 
-            title="Profile Views" 
-            value={stats?.totalViews.toLocaleString()} 
-            icon={<TrendingUp className="h-4 w-4" />} 
+          <StatCard
+            title="Profile Views"
+            value={stats?.totalViews.toLocaleString()}
+            icon={<TrendingUp className="h-4 w-4" />}
             loading={statsLoading}
             trend="+12% vs last week"
             isPositive
           />
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-          {/* Main Chart */}
-          <Card className="lg:col-span-4">
+          <Card className="lg:col-span-4 shadow-soft">
             <CardHeader>
               <CardTitle>Discovery Insights</CardTitle>
               <CardDescription>Views across all tracked Google Business Profiles</CardDescription>
@@ -108,37 +109,42 @@ export function HomePage() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-          {/* Critical Items */}
-          <Card className="lg:col-span-3">
+          <Card className="lg:col-span-3 shadow-soft overflow-hidden">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-destructive" />
                 <CardTitle>Needs Attention</CardTitle>
               </div>
-              <CardDescription>Locations with ratings below 4.0 or flagged status</CardDescription>
+              <CardDescription>High priority items for your review</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {bizLoading ? (
-                  Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)
+                  Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)
                 ) : needsAttention.length > 0 ? (
                   needsAttention.map((biz) => (
-                    <div key={biz.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
+                    <Link
+                      key={biz.id}
+                      to={`/locations/${biz.id}`}
+                      className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-accent transition-all duration-200 hover:shadow-sm"
+                    >
                       <div className="space-y-1">
-                        <p className="text-sm font-medium leading-none">{biz.name}</p>
-                        <p className="text-xs text-muted-foreground">{biz.category}</p>
+                        <p className="text-sm font-semibold">{biz.name}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{biz.address}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                        <span className="text-sm font-bold">{biz.rating}</span>
-                        <Badge variant={biz.status === 'Flagged' ? 'destructive' : 'outline'} className="text-[10px] h-5">
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="flex items-center gap-1">
+                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                          <span className="text-xs font-bold">{biz.rating}</span>
+                        </div>
+                        <Badge variant={biz.status === 'Flagged' ? 'destructive' : 'outline'} className="text-[10px] h-4 py-0">
                           {biz.status}
                         </Badge>
                       </div>
-                    </div>
+                    </Link>
                   ))
                 ) : (
-                  <div className="text-center py-10 text-muted-foreground">
+                  <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-xl">
                     All locations are performing well!
                   </div>
                 )}
@@ -150,30 +156,34 @@ export function HomePage() {
     </AppLayout>
   );
 }
-function StatCard({ title, value, icon, loading, trend, isPositive }: { 
-  title: string; 
-  value: any; 
-  icon: React.ReactNode; 
+function StatCard({ title, value, icon, loading, trend, isPositive }: {
+  title: string;
+  value: any;
+  icon: React.ReactNode;
   loading: boolean;
   trend?: string;
   isPositive?: boolean;
 }) {
   return (
-    <Card>
+    <Card className="shadow-soft hover:shadow-md transition-shadow duration-200">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <div className="text-muted-foreground">{icon}</div>
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        <div className="text-foreground/70">{icon}</div>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <Skeleton className="h-8 w-20" />
+          <Skeleton className="h-8 w-24" />
         ) : (
           <>
-            <div className="text-2xl font-bold">{value ?? '0'}</div>
+            <div className="text-2xl font-bold tracking-tight">{value ?? '0'}</div>
             {trend && (
-              <div className="flex items-center mt-1">
-                {isPositive ? <ArrowUpRight className="h-3 w-3 text-emerald-500 mr-1" /> : <ArrowDownRight className="h-3 w-3 text-rose-500 mr-1" />}
-                <p className={cn("text-xs", isPositive ? "text-emerald-500" : "text-rose-500")}>
+              <div className="flex items-center mt-2">
+                {isPositive ? (
+                  <ArrowUpRight className="h-3.5 w-3.5 text-emerald-500 mr-1" />
+                ) : (
+                  <ArrowDownRight className="h-3.5 w-3.5 text-rose-500 mr-1" />
+                )}
+                <p className={cn("text-xs font-medium", isPositive ? "text-emerald-500" : "text-rose-500")}>
                   {trend}
                 </p>
               </div>

@@ -16,6 +16,31 @@ export interface Business {
   recentTrend: number[]; // 7 days of view data
   lastUpdated: string;
 }
+export interface Review {
+  id: string;
+  businessId: string;
+  author: string;
+  rating: number;
+  comment: string;
+  date: string;
+  response?: string;
+  avatarUrl?: string;
+}
+export interface LocationInsights {
+  searchTerms: { term: string; growth: number }[];
+  actions: {
+    calls: number;
+    directions: number;
+    website: number;
+  };
+}
+export interface ProfileHealth {
+  phoneVerified: boolean;
+  websiteLinked: boolean;
+  hoursSet: boolean;
+  photosCount: number;
+  descriptionSet: boolean;
+}
 export interface BusinessStats {
   totalLocations: number;
   averageRating: number;
@@ -24,7 +49,6 @@ export interface BusinessStats {
   ratingGrowth: number;
   reviewGrowth: number;
 }
-// Minimal real-world chat example types (kept for template compatibility)
 export interface User {
   id: string;
   name: string;
